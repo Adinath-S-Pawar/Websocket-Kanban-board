@@ -87,11 +87,11 @@ io.on("connection", (socket) => {
         task.category = updates.category.trim();
       }
 
-      if (typeof updates.status === "string" && isValidStatus(updates.status)) {
+      if (typeof updates.status === "string" && IsValidStatus(updates.status)) {
         task.status = updates.status;
       }
 
-      if (typeof updates.priority === "string" && isValidPriority(updates.priority)) {
+      if (typeof updates.priority === "string" && IsValidPriority(updates.priority)) {
         task.priority = updates.priority;
       }
 
@@ -111,7 +111,7 @@ io.on("connection", (socket) => {
   socket.on("task:move", (payload) => {
     try {
       const { id, newStatus } = payload || {};
-      if (!id || !isValidStatus(newStatus)) return;
+      if (!id || !IsValidStatus(newStatus)) return;
 
       const task = tasks.find((t) => t.id === id);
       if (!task) return;
