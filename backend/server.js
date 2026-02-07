@@ -42,8 +42,7 @@ io.on("connection", (socket) => {
       }
 
       const newTask = {
-
-        id: generateId(),
+        id: GenerateId(),
         title: payload.title.trim(),
         description: payload.description?.trim() || "",
         status: IsValidStatus(payload.status) ? payload.status : "todo",
