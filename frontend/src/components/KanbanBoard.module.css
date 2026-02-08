@@ -108,3 +108,12 @@
   font-size: 14px;
   color: #666;
 }
+
+.taskCard {
+  cursor: grab;
+}
+
+.taskCard:active {
+  cursor: grabbing;
+}
+

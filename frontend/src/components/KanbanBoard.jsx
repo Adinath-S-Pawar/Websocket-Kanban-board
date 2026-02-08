@@ -1,4 +1,5 @@
-import React, { useEffect, useState,useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useDrag, useDrop } from "react-dnd";
 import { socket } from "../socket";
 import styles from "./KanbanBoard.module.css";
 
@@ -7,6 +8,71 @@ const COLUMNS = [
   { key: "inprogress", title: "In Progress" },
   { key: "done", title: "Done" },
 ];
+
+const ItemTypes = {
+  TASK: "task",
+};
+
+function TaskCard({ task }) {
+  const [{ isDragging }, dragRef] = useDrag(() => ({
+    type: ItemTypes.TASK,
+    item: { id: task.id },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  }));
+
+  return (
+    <div
+      ref={dragRef}
+      className={styles.taskCard}
+      style={{ opacity: isDragging ? 0.5 : 1 }}
+    >
+      <h4 className={styles.taskTitle}>{task.title}</h4>
+
+      {task.description && <p className={styles.taskDesc}>{task.description}</p>}
+
+      <p className={styles.taskMeta}>
+        <b>Priority:</b> {task.priority} | <b>Category:</b> {task.category}
+      </p>
+    </div>
+  );
+}
+
+function Column({ columnKey, title, tasks }) {
+  const [{ isOver }, dropRef] = useDrop(() => ({
+    accept: ItemTypes.TASK,
+    drop: (item) => {
+      
+      socket.emit("task:move", { id: item.id, newStatus: columnKey });
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+    }),
+  }));
+
+  return (
+    <div
+      ref={dropRef}
+      className={styles.column}
+      style={{
+        outline: isOver ? "2px dashed black" : "none",
+      }}
+    >
+      <h3 className={styles.columnTitle}>
+        {title} ({tasks.length})
+      </h3>
+
+      <div className={styles.taskList}>
+        {tasks.map((task) => (
+          <TaskCard key={task.id} task={task} />
+        ))}
+
+        {tasks.length === 0 && <p className={styles.emptyText}>No tasks here.</p>}
+      </div>
+    </div>
+  );
+}
 
 function KanbanBoard() {
   const [tasks, setTasks] = useState([]);
@@ -17,7 +83,6 @@ function KanbanBoard() {
   const [priority, setPriority] = useState("low");
   const [category, setCategory] = useState("Bug");
 
-  // Group tasks by status.
   const TasksByStatus = useMemo(() => {
     return {
       todo: tasks.filter((t) => t.status === "todo"),
@@ -28,7 +93,6 @@ function KanbanBoard() {
 
   useEffect(() => {
     const onConnect = () => {
-      console.log("Connected:", socket.id);
       socket.emit("sync:tasks");
     };
 
@@ -48,7 +112,6 @@ function KanbanBoard() {
 
   function HandleCreateTask(e) {
     e.preventDefault();
-
     if (!title.trim()) return;
 
     socket.emit("task:create", {
@@ -60,7 +123,6 @@ function KanbanBoard() {
       attachments: [],
     });
 
-    // Reset form
     setTitle("");
     setDescription("");
     setPriority("low");
@@ -80,7 +142,8 @@ function KanbanBoard() {
     <div className={styles.kanbanContainer}>
       <h2 className={styles.kanbanHeader}>Kanban Board</h2>
 
-      <form className="task-form" onSubmit={HandleCreateTask}>
+      {/* Task Form */}
+      <form className={styles.taskForm} onSubmit={HandleCreateTask}>
         <input
           type="text"
           placeholder="Task title (required)"
@@ -111,34 +174,15 @@ function KanbanBoard() {
         </button>
       </form>
 
-     <div className="board-grid">
+      {/* Board */}
+      <div className={styles.boardGrid}>
         {COLUMNS.map((col) => (
-          <div className="column" key={col.key}>
-            <h3 className="column-title">
-              {col.title} ({TasksByStatus[col.key].length})
-            </h3>
-
-            <div className="task-list">
-              {TasksByStatus[col.key].map((task) => (
-                <div className="task-card" key={task.id}>
-                  <h4 className="task-title">{task.title}</h4>
-
-                  {task.description && (
-                    <p className="task-desc">{task.description}</p>
-                  )}
-
-                  <p className="task-meta">
-                    <b>Priority:</b> {task.priority} | <b>Category:</b>{" "}
-                    {task.category}
-                  </p>
-                </div>
-              ))}
-
-              {TasksByStatus[col.key].length === 0 && (
-                <p className="empty-text">No tasks here.</p>
-              )}
-            </div>
-          </div>
+          <Column
+            key={col.key}
+            columnKey={col.key}
+            title={col.title}
+            tasks={TasksByStatus[col.key]}
+          />
         ))}
       </div>
     </div>
