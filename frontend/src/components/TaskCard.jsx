@@ -7,11 +7,15 @@ export default function TaskCard({ task, socket }) {
 
     const [Title, setTitle] = useState(task.title);
     const [Description, setDescription] = useState(task.description || "");
+
     const [Priority, setPriority] = useState(task.priority || "low");
     const [Category, setCategory] = useState(task.category || "general");
     const [Status, setStatus] = useState(task.status || "todo");
+
     const [Attachments, setAttachments] = useState(task.attachments || []);
     const [PreviewFile, setPreviewFile] = useState(null);
+    const [SelectedFile, setSelectedFile] = useState(null);
+
 
     useEffect(() => {
         setTitle(task.title);
@@ -30,7 +34,7 @@ export default function TaskCard({ task, socket }) {
         collect: (monitor) => ({
             IsDragging: monitor.isDragging(),
         }),
-    }));
+    }),[IsEditing, task.id]);
 
     const PriorityLabel = useMemo(() => {
         if (Priority === "high") return "High";
@@ -43,6 +47,18 @@ export default function TaskCard({ task, socket }) {
     }
 
     function HandleSave() {
+        let UpdatedAttachments = [...Attachments];
+
+        if (SelectedFile) {
+            const NewAttachment = {
+                name: SelectedFile.name,
+                type: SelectedFile.type,
+                url: URL.createObjectURL(SelectedFile),
+            };
+
+            UpdatedAttachments.push(NewAttachment);
+        }
+
         socket.emit("task:update", {
             id: task.id,
             updates: {
@@ -51,12 +67,13 @@ export default function TaskCard({ task, socket }) {
                 priority: Priority,
                 category: Category,
                 status: Status,
-                attachments: Attachments,
-
+                attachments: UpdatedAttachments,
             },
         });
 
         setIsEditing(false);
+        setSelectedFile(null);
+
     }
 
     function HandleCancel() {
@@ -67,38 +84,33 @@ export default function TaskCard({ task, socket }) {
         setStatus(task.status || "todo");
         setIsEditing(false);
         setAttachments(task.attachments || []);
-
+        setSelectedFile(null);
     }
 
-    function HandleUploadFile(e) {
+    function HandleEditOpen() {
+        setIsEditing(true);
+
+        setTitle(task.title);
+        setDescription(task.description);
+        setPriority(task.priority);
+        setCategory(task.category);
+        setStatus(task.status || "todo");
+        setAttachments(task.attachments || []);
+
+        setSelectedFile(null);
+    }
+
+    function HandleFileChange(e) {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        const FileUrl = URL.createObjectURL(file);
-
-        const NewAttachment = {
-            name: file.name,
-            type: file.type,
-            url: FileUrl,
-        };
-
-        const UpdatedAttachments = [NewAttachment];
-        setAttachments(UpdatedAttachments);
-
-        // Update backend (simulated storage)
-        socket.emit("task:update", {
-            id: task.id,
-            updates: { attachments: UpdatedAttachments, },
-        });
-
-        // Reset input so same file can be uploaded again
-        e.target.value = "";
+        setSelectedFile(file);
     }
 
 
     return (
         <div ref={dragRef}
-            className={`${styles.card} ${IsDragging ? styles.dragging : ""}`}
+            className={`${styles.card} ${IsDragging ? styles.dragging : ""} ${IsEditing ? styles.notDraggable : ""}`}
         >
 
             {!IsEditing ? (
@@ -118,7 +130,7 @@ export default function TaskCard({ task, socket }) {
                         <span className={styles.badge}>Category: {task.category}</span>
                     </div>
 
-                    <button className={styles.editBtn} onClick={() => setIsEditing(true)}>
+                    <button className={styles.editBtn} onClick={HandleEditOpen}>
                         Edit
                     </button>
 
@@ -206,10 +218,19 @@ export default function TaskCard({ task, socket }) {
                         <input
                             type="file"
                             className={styles.fileInput}
-                            onChange={HandleUploadFile}
+                            onChange={HandleFileChange}
                         />
-                    </div>
 
+                          <div>
+                                <p>Selected file:</p>
+
+                                {SelectedFile ? (
+                                <div>🆕 {SelectedFile.name}</div>
+                                ) : (
+                                <div>No file selected</div>
+                                )}
+                            </div>
+                    </div>
 
                     <div className={styles.actions}>
                         <button className={styles.saveBtn} onClick={HandleSave}>
@@ -222,7 +243,7 @@ export default function TaskCard({ task, socket }) {
 
                     {Attachments.length > 0 && (
                         <div className={styles.attachments}>
-                            <p className={styles.attachmentsTitle}>Selected Attachments</p>
+                            <p className={styles.attachmentsTitle}>Attachments</p>
 
                             <div className={styles.attachmentChips}>
                                 {Attachments.map((file, index) => (

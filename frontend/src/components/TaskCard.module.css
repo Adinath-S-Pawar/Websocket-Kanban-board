@@ -276,3 +276,11 @@
   border-radius: 12px;
   text-decoration: none;
 }
+
+.dragging {
+  opacity: 0.5;
+}
+
+.notDraggable {
+  cursor: default; /* normal arrow instead of grab */
+}

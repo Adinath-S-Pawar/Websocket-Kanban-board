@@ -18,7 +18,7 @@ export default function Column({ column, tasks, socket }) {
     collect: (monitor) => ({
       IsOver: monitor.isOver(),
     }),
-  }));
+  }),[column.key, socket]);
 
   return (
     <div
