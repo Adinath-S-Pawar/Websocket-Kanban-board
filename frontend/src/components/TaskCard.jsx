@@ -1,62 +1,268 @@
 import React, { useMemo, useState, useEffect } from "react";
+import ReactDOM from "react-dom";
 import styles from "./TaskCard.module.css";
 import { useDrag } from "react-dnd";
 
+// --- Helper: Portal for Modals ---
+const Portal = ({ children }) => {
+    return ReactDOM.createPortal(children, document.body);
+};
+
+// --- Helper: Edit Modal Component ---
+function TaskEditModal({ 
+    Title, setTitle, 
+    Description, setDescription, 
+    Priority, setPriority, 
+    Category, setCategory, 
+    Status, setStatus, 
+    Attachments, setAttachments,
+    NewAttachments, setNewAttachments, // Changed from SelectedFile
+    HandleSave, HandleCancel,
+    HandleFileChange 
+}) {
+    // Helper to remove a pending upload
+    const removePendingUpload = (index) => {
+        setNewAttachments(prev => prev.filter((_, i) => i !== index));
+    };
+
+    return (
+        <Portal>
+            <div className={styles.modalOverlay} onClick={HandleCancel}>
+                <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+                    <div className={styles.modalHeader}>
+                        <h3>Edit Task</h3>
+                        <button className={styles.closeHeaderBtn} onClick={HandleCancel}>✖</button>
+                    </div>
+
+                    <div className={styles.modalBody}>
+                        {/* Title & Description */}
+                        <div className={styles.fieldGroup}>
+                            <label className={styles.label}>Title</label>
+                            <input
+                                className={styles.input}
+                                value={Title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                placeholder="Task title"
+                                autoFocus
+                            />
+                        </div>
+
+                        <div className={styles.fieldGroup}>
+                            <label className={styles.label}>Description</label>
+                            <textarea
+                                className={styles.textarea}
+                                value={Description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder="Task description"
+                            />
+                        </div>
+
+                        {/* Selects Row */}
+                        <div className={styles.fieldRow}>
+                            <div className={styles.field}>
+                                <label className={styles.label}>Priority</label>
+                                <select
+                                    className={styles.select}
+                                    value={Priority}
+                                    onChange={(e) => setPriority(e.target.value)}
+                                >
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+
+                            <div className={styles.field}>
+                                <label className={styles.label}>Category</label>
+                                <select
+                                    className={styles.select}
+                                    value={Category}
+                                    onChange={(e) => setCategory(e.target.value)}
+                                >
+                                    <option value="bug">Bug</option>
+                                    <option value="feature">Feature</option>
+                                    <option value="enhancement">Enhancement</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className={styles.field}>
+                            <label className={styles.label}>Status</label>
+                            <select
+                                className={styles.select}
+                                value={Status}
+                                onChange={(e) => setStatus(e.target.value)}
+                            >
+                                <option value="todo">To Do</option>
+                                <option value="inprogress">In Progress</option>
+                                <option value="done">Done</option>
+                            </select>
+                        </div>
+
+                        {/* Attachments Section */}
+                        <div className={styles.field}>
+                            <label className={styles.label}>Attachments</label>
+                            
+                            {/* Existing File List */}
+                            {Attachments.length > 0 && (
+                                <ul className={styles.editAttachmentList}>
+                                    {Attachments.map((file, index) => (
+                                        <li key={index} className={styles.editAttachmentItem}>
+                                            <span className={styles.fileName}>
+                                                {file.type?.startsWith("image/") ? "🖼" : "📎"} {file.name}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                className={styles.removeAttachmentBtn}
+                                                onClick={() => {
+                                                    const Updated = Attachments.filter((_, i) => i !== index);
+                                                    setAttachments(Updated);
+                                                }}
+                                            >
+                                                ❌
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+
+                            {/* Pending Uploads List */}
+                            {NewAttachments.length > 0 && (
+                                <div className={styles.pendingUploads}>
+                                    <p className={styles.pendingLabel}>Pending Uploads:</p>
+                                    <ul className={styles.editAttachmentList}>
+                                        {NewAttachments.map((file, index) => (
+                                            <li key={index} className={styles.editAttachmentItem}>
+                                                <span className={styles.fileName}>🆕 {file.name}</span>
+                                                <button
+                                                    type="button"
+                                                    className={styles.removeAttachmentBtn}
+                                                    onClick={() => removePendingUpload(index)}
+                                                >
+                                                    ❌
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {/* Upload Input */}
+                            <div className={styles.uploadArea}>
+                                <input
+                                    type="file"
+                                    className={styles.fileInput}
+                                    onChange={HandleFileChange}
+                                    multiple // Helper: allow selecting multiple in system dialog too (optional)
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className={styles.modalFooter}>
+                        <button className={styles.saveBtn} onClick={HandleSave}>Save</button>
+                        <button className={styles.cancelBtn} onClick={HandleCancel}>Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </Portal>
+    );
+}
+
+
+// --- Main Card Component ---
 export default function TaskCard({ task, socket }) {
     const [IsEditing, setIsEditing] = useState(false);
-
+    
+    // State for Edit Form
     const [Title, setTitle] = useState(task.title);
     const [Description, setDescription] = useState(task.description || "");
-
     const [Priority, setPriority] = useState(task.priority || "low");
     const [Category, setCategory] = useState(task.category || "general");
     const [Status, setStatus] = useState(task.status || "todo");
-
     const [Attachments, setAttachments] = useState(task.attachments || []);
+    
+    // State for temporary file selection (Array now)
+    const [NewAttachments, setNewAttachments] = useState([]);
+
+    // State for Previews
     const [PreviewFile, setPreviewFile] = useState(null);
-    const [SelectedFile, setSelectedFile] = useState(null);
+    const [ShowAttachmentPopup, setShowAttachmentPopup] = useState(false);
 
-
+    // Sync task prop to state
     useEffect(() => {
-        setTitle(task.title);
-        setDescription(task.description || "");
-        setPriority(task.priority || "low");
-        setCategory(task.category || "general");
-        setStatus(task.status || "todo");
-        setAttachments(task.attachments || []);
-    }, [task]);
+        if (!IsEditing) {
+            setTitle(task.title);
+            setDescription(task.description || "");
+            setPriority(task.priority || "low");
+            setCategory(task.category || "general");
+            setStatus(task.status || "todo");
+            setAttachments(task.attachments || []);
+        }
+    }, [task, IsEditing]);
 
 
     const [{ IsDragging }, dragRef] = useDrag(() => ({
         type: "TASK",
-        item: { id: task.id, isEditing: IsEditing },
-        canDrag: !IsEditing,
+        item: { id: task.id },
         collect: (monitor) => ({
             IsDragging: monitor.isDragging(),
         }),
-    }),[IsEditing, task.id]);
+    }), [task.id]);
 
-    const PriorityLabel = useMemo(() => {
-        if (Priority === "high") return "High";
-        if (Priority === "medium") return "Medium";
-        return "Low";
-    }, [Priority]);
+    const PriorityClass = useMemo(() => {
+        switch (task.priority) {
+            case "high": return styles.badgeHigh;
+            case "medium": return styles.badgeMedium;
+            default: return styles.badgeLow;
+        }
+    }, [task.priority]);
 
     function HandleDelete() {
         socket.emit("task:delete", { id: task.id });
     }
 
+    function HandleEditOpen() {
+        setIsEditing(true);
+        // Reset local form state
+        setTitle(task.title);
+        setDescription(task.description);
+        setPriority(task.priority);
+        setCategory(task.category);
+        setStatus(task.status || "todo");
+        setAttachments(task.attachments || []);
+        
+        // Clear pending files
+        setNewAttachments([]);
+    }
+
+    function HandleCancel() {
+        setIsEditing(false);
+        setNewAttachments([]);
+    }
+
+    function HandleFileChange(e) {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+        
+        // Append new files to existing pending files
+        setNewAttachments(prev => [...prev, ...files]);
+        
+        // Reset input so same file can be selected again if needed (visual cleanup)
+        e.target.value = "";
+    }
+
     function HandleSave() {
-        let UpdatedAttachments = [...Attachments];
+        let FinalAttachments = [...Attachments];
 
-        if (SelectedFile) {
-            const NewAttachment = {
-                name: SelectedFile.name,
-                type: SelectedFile.type,
-                url: URL.createObjectURL(SelectedFile),
-            };
-
-            UpdatedAttachments.push(NewAttachment);
+        // Process all new files
+        if (NewAttachments.length > 0) {
+            const processedFiles = NewAttachments.map(file => ({
+                name: file.name,
+                type: file.type,
+                url: URL.createObjectURL(file),
+            }));
+            FinalAttachments = [...FinalAttachments, ...processedFiles];
         }
 
         socket.emit("task:update", {
@@ -67,255 +273,119 @@ export default function TaskCard({ task, socket }) {
                 priority: Priority,
                 category: Category,
                 status: Status,
-                attachments: UpdatedAttachments,
+                attachments: FinalAttachments,
             },
         });
 
         setIsEditing(false);
-        setSelectedFile(null);
-
+        setNewAttachments([]);
     }
-
-    function HandleCancel() {
-        setTitle(task.title);
-        setDescription(task.description || "");
-        setPriority(task.priority || "low");
-        setCategory(task.category || "general");
-        setStatus(task.status || "todo");
-        setIsEditing(false);
-        setAttachments(task.attachments || []);
-        setSelectedFile(null);
-    }
-
-    function HandleEditOpen() {
-        setIsEditing(true);
-
-        setTitle(task.title);
-        setDescription(task.description);
-        setPriority(task.priority);
-        setCategory(task.category);
-        setStatus(task.status || "todo");
-        setAttachments(task.attachments || []);
-
-        setSelectedFile(null);
-    }
-
-    function HandleFileChange(e) {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        setSelectedFile(file);
-    }
-
 
     return (
-        <div ref={dragRef}
-            className={`${styles.card} ${IsDragging ? styles.dragging : ""} ${IsEditing ? styles.notDraggable : ""}`}
-        >
-
-            {!IsEditing ? (
-                <>  {/*not editing */}
-                    <div className={styles.header}>
-                        <h4 className={styles.title}>{task.title}</h4>
-
-                        <button className={styles.deleteBtn} onClick={HandleDelete}>
-                            ✖
-                        </button>
+        <>
+            <div ref={dragRef}
+                className={`${styles.card} ${IsDragging ? styles.dragging : ""}`}
+                onClick={HandleEditOpen}
+            >
+                <div className={styles.header}>
+                    <h4 className={styles.title}>{task.title}</h4>
+                    <div className={styles.actionsHeader}>
+                        <button className={styles.iconBtn} onClick={(e) => { e.stopPropagation(); HandleEditOpen(); }}>✏️</button>
+                        <button className={`${styles.iconBtn} ${styles.deleteBtn}`} onClick={(e) => { e.stopPropagation(); HandleDelete(); }}>🗑️</button>
                     </div>
+                </div>
 
-                    <p className={styles.description}>{task.description || "—"}</p>
+                <p className={styles.description}>{task.description || "—"}</p>
 
-                    <div className={styles.meta}>
-                        <span className={styles.badge}>Priority: {PriorityLabel}</span>
-                        <span className={styles.badge}>Category: {task.category}</span>
-                    </div>
+                <div className={styles.meta}>
+                    <span className={`${styles.badge} ${PriorityClass}`}>{task.priority}</span>
+                    <span className={`${styles.badge} ${styles.badgeCategory}`}>{task.category}</span>
+                </div>
 
-                    <button className={styles.editBtn} onClick={HandleEditOpen}>
-                        Edit
-                    </button>
-
-                    {Array.isArray(task.attachments) && task.attachments.length > 0 && (
-                        <div className={styles.attachments}>
-                            <p className={styles.attachmentsTitle}>Attachments</p>
-
-                            <div className={styles.attachmentChips}>
-                                {task.attachments.map((file, index) => (
-                                    <button
-                                        key={index}
-                                        type="button"
-                                        className={styles.attachmentChip}
-                                        onClick={() => setPreviewFile(file)}
-                                    >
-                                        {file.type?.startsWith("image/") ? "🖼" : "📎"} {file.name}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-
-                </>
-            ) : (
-                <>
-                    <input
-                        className={styles.input}
-                        value={Title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder="Task title"
-                    />
-
-                    <textarea
-                        className={styles.textarea}
-                        value={Description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Task description"
-                    />
-
-                    <div className={styles.fieldRow}>
-                        <div className={styles.field}>
-                            <label className={styles.label}>Priority</label>
-                            <select
-                                className={styles.select}
-                                value={Priority}
-                                onChange={(e) => setPriority(e.target.value)}
-                            >
-                                <option value="low">Low</option>
-                                <option value="medium">Medium</option>
-                                <option value="high">High</option>
-                            </select>
-                        </div>
-
-                        <div className={styles.field}>
-                            <label className={styles.label}>Category</label>
-                            <select
-                                className={styles.select}
-                                value={Category}
-                                onChange={(e) => setCategory(e.target.value)}
-                            >
-                                <option value="bug">Bug</option>
-                                <option value="feature">Feature</option>
-                                <option value="enhancement">Enhancement</option>
-                            </select>
-                        </div>
-                    </div>
-
-
-                    <div className={styles.field}>
-                        <label className={styles.label}>Status</label>
-                        <select
-                            className={styles.select}
-                            value={Status}
-                            onChange={(e) => setStatus(e.target.value)}
+                {/* Attachments Summary Chip */}
+                {Array.isArray(task.attachments) && task.attachments.length > 0 && (
+                    <div className={styles.attachments}>
+                        <div 
+                            className={styles.attachmentSummaryChip}
+                            onClick={(e) => { e.stopPropagation(); setShowAttachmentPopup(true); }}
                         >
-                            <option value="todo">To Do</option>
-                            <option value="inprogress">In Progress</option>
-                            <option value="done">Done</option>
-                        </select>
+                            📎 {task.attachments.length} Attachment{task.attachments.length > 1 ? "s" : ""}
+                        </div>
                     </div>
+                )}
+            </div>
 
-                    <div className={styles.field}>
-                        <label className={styles.label}>Upload Attachment</label>
-                        <input
-                            type="file"
-                            className={styles.fileInput}
-                            onChange={HandleFileChange}
-                        />
+            {/* --- Modals --- */}
+            
+            {/* 1. Edit Modal */}
+            {IsEditing && (
+                <TaskEditModal 
+                    Title={Title} setTitle={setTitle}
+                    Description={Description} setDescription={setDescription}
+                    Priority={Priority} setPriority={setPriority}
+                    Category={Category} setCategory={setCategory}
+                    Status={Status} setStatus={setStatus}
+                    Attachments={Attachments} setAttachments={setAttachments}
+                    NewAttachments={NewAttachments} setNewAttachments={setNewAttachments}
+                    HandleSave={HandleSave} HandleCancel={HandleCancel}
+                    HandleFileChange={HandleFileChange}
+                />
+            )}
 
-                          <div>
-                                <p>Selected file:</p>
-
-                                {SelectedFile ? (
-                                <div>🆕 {SelectedFile.name}</div>
-                                ) : (
-                                <div>No file selected</div>
-                                )}
+            {/* 2. Attachment List Popup */}
+            {ShowAttachmentPopup && (
+                <Portal>
+                     <div className={styles.modalOverlay} onClick={() => setShowAttachmentPopup(false)}>
+                        <div className={styles.popupContent} onClick={e => e.stopPropagation()}>
+                            <div className={styles.modalHeader}>
+                                <h4>Attachments</h4>
+                                <button className={styles.closeHeaderBtn} onClick={() => setShowAttachmentPopup(false)}>✖</button>
                             </div>
-                    </div>
-
-                    <div className={styles.actions}>
-                        <button className={styles.saveBtn} onClick={HandleSave}>
-                            Save
-                        </button>
-                        <button className={styles.cancelBtn} onClick={HandleCancel}>
-                            Cancel
-                        </button>
-                    </div>
-
-                    {Attachments.length > 0 && (
-                        <div className={styles.attachments}>
-                            <p className={styles.attachmentsTitle}>Attachments</p>
-
-                            <div className={styles.attachmentChips}>
-                                {Attachments.map((file, index) => (
-                                    <div key={index} className={styles.attachmentChipRow}>
-                                        <button
-                                            type="button"
-                                            className={styles.attachmentChip}
-                                            onClick={() => setPreviewFile(file)}
-                                        >
-                                            {file.type?.startsWith("image/") ? "🖼" : "📎"} {file.name}
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            className={styles.removeAttachmentBtn}
-                                            onClick={() => {
-                                                const Updated = Attachments.filter((_, i) => i !== index);
-                                                setAttachments(Updated);
-
-                                                socket.emit("task:update", {
-                                                    id: task.id,
-                                                    updates: { attachments: Updated },
-                                                });
-                                            }}
-                                        >
-                                            ❌
-                                        </button>
+                             <div className={styles.popupList}>
+                                {task.attachments.map((file, i) => (
+                                    <div 
+                                        key={i} 
+                                        className={styles.popupItem}
+                                        onClick={() => {
+                                            // Handle Preview Logic
+                                            if (file.type?.startsWith("image/")) {
+                                                setPreviewFile(file);
+                                                setShowAttachmentPopup(false); // Close list when opening preview
+                                            } else {
+                                                window.open(file.url, "_blank");
+                                                setShowAttachmentPopup(false); // Close list after opening tab
+                                                // Do NOT setPreviewFile(file) here to avoid the "cannot preview" modal
+                                            }
+                                        }}
+                                    >
+                                        <span>{file.type?.startsWith("image/") ? "🖼" : "📎"}</span>
+                                        <span className={styles.popupFileName}>{file.name}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                    )}
-
-                </>
+                    </div>
+                </Portal>
             )}
 
+            {/* 3. Image Preview Modal */}
             {PreviewFile && (
-                <div className={styles.previewOverlay} onClick={() => setPreviewFile(null)}>
-                    <div
-                        className={styles.previewModal}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className={styles.previewHeader}>
-                            <p className={styles.previewName}>{PreviewFile.name}</p>
-                            <button
-                                className={styles.previewClose}
-                                onClick={() => setPreviewFile(null)}
-                            >
-                                ✖
-                            </button>
-                        </div>
-
-                        {PreviewFile.type?.startsWith("image/") ? (
+                <Portal>
+                    <div className={styles.previewOverlay} onClick={() => setPreviewFile(null)}>
+                        <div className={styles.previewModal} onClick={(e) => e.stopPropagation()}>
+                            <div className={styles.previewHeader}>
+                                <p className={styles.previewName}>{PreviewFile.name}</p>
+                                <button className={styles.previewClose} onClick={() => setPreviewFile(null)}>✖</button>
+                            </div>
                             <img
                                 src={PreviewFile.url}
                                 alt={PreviewFile.name}
                                 className={styles.previewImage}
                             />
-                        ) : (
-                            <a
-                                href={PreviewFile.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className={styles.previewLink}
-                            >
-                                Open file
-                            </a>
-                        )}
+                        </div>
                     </div>
-                </div>
+                </Portal>
             )}
-
-        </div>
+        </>
     );
 }

@@ -18,14 +18,15 @@ export default function Column({ column, tasks, socket }) {
     collect: (monitor) => ({
       IsOver: monitor.isOver(),
     }),
-  }),[column.key, socket]);
+  }), [column.key, socket]);
 
   return (
-    <div
-      ref={dropRef}
-      className={`${styles.column} ${IsOver ? styles.columnHover : ""}`}
-    >
-      <h3 className={styles.columnTitle}>{column.title}</h3>
+    // inside Column.jsx return
+    <div ref={dropRef} className={`${styles.column} ${IsOver ? styles.columnHover : ""}`}>
+      <div className={styles.columnHeader}>
+        <h3 className={styles.columnTitle}>{column.title}</h3>
+        <span className={styles.taskCountBadge}>{tasks.length}</span>
+      </div>
 
       <div className={styles.taskList}>
         {tasks.map((task) => (
@@ -33,5 +34,6 @@ export default function Column({ column, tasks, socket }) {
         ))}
       </div>
     </div>
+
   );
 }

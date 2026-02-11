@@ -17,6 +17,7 @@ export default function KanbanBoard() {
   const [IsLoading, setIsLoading] = useState(true);
 
   const [Title, setTitle] = useState("");
+  const [ShowChart, setShowChart] = useState(false);
 
   useEffect(() => {
     socket.on("connect", () => {
@@ -62,36 +63,47 @@ export default function KanbanBoard() {
 
   return (
     <div className={styles.kanbanContainer}>
-      <h2>Kanban Board</h2>
+      <header className={styles.kanbanHeader}>
+        <h2>Kanban Board</h2>
+        <div className={styles.headerActions}>
+          <button
+            className={styles.statsBtn}
+            onClick={() => setShowChart(!ShowChart)}
+          >
+            {ShowChart ? "Hide Stats" : "Show Stats"}
+          </button>
+        </div>
+      </header>
 
-      <form className={styles.createForm} onSubmit={HandleCreateTask}>
-        <input
-          className={styles.input}
-          value={Title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Enter task title..."
-        />
-        <button className={styles.addBtn}>Add</button>
-      </form>
+      <div className={styles.controls}>
+        <form className={styles.createForm} onSubmit={HandleCreateTask}>
+          <input
+            className={styles.input}
+            value={Title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Enter task title..."
+          />
+          <button className={styles.addBtn}>Add</button>
+        </form>
+      </div>
 
-      {IsLoading ? (
-        <p className={styles.loading}>Loading tasks from server...</p>
-      ) : (
-        <>
+      {/* Removed blocking loading state to show columns immediately */}
+      {ShowChart && (
+        <div className={styles.chartContainer}>
           <TaskProgressChart Tasks={Tasks} />
-          
-          <div className={styles.board}>
-            {COLUMNS.map((col) => (
-              <Column
-                key={col.key}
-                column={col}
-                tasks={TasksByStatus[col.key]}
-                socket={socket}
-              />
-            ))}
-          </div>
-        </>
+        </div>
       )}
+
+      <div className={styles.board}>
+        {COLUMNS.map((col) => (
+          <Column
+            key={col.key}
+            column={col}
+            tasks={TasksByStatus[col.key]}
+            socket={socket}
+          />
+        ))}
+      </div>
     </div>
   );
 }

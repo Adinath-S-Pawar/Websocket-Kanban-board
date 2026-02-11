@@ -10,7 +10,7 @@ import {
 } from "recharts";
 
 export default function TaskProgressChart({ Tasks }) {
-  const ChartData = useMemo(() => {
+    const ChartData = useMemo(() => {
     const TodoCount = Tasks.filter((t) => t.status === "todo").length;
     const InProgressCount = Tasks.filter((t) => t.status === "inprogress").length;
     const DoneCount = Tasks.filter((t) => t.status === "done").length;
