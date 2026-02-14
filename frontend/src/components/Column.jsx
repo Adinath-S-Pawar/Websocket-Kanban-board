@@ -23,7 +23,9 @@ export default function Column({ column, tasks, socket }) {
 
   return (
     
-    <div ref={dropRef} className={`${styles.column} ${IsOver ? styles.columnHover : ""}`}>
+    <div ref={dropRef} 
+         data-testid={`drop-column-${column.key}`}
+         className={`${styles.column} ${IsOver ? styles.columnHover : ""}`}>
       <div className={styles.columnHeader}>
         <h3 className={styles.columnTitle}>{column.title}</h3>
         <span className={styles.taskCountBadge}>{SafeTasks.length}</span>

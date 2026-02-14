@@ -139,25 +139,14 @@ test.describe("Kanban Board E2E Tests", () => {
     await page.getByPlaceholder("Enter task title...").fill(taskTitle);
     await page.getByRole("button", { name: "Add" }).click();
 
-    const taskCard = page.getByText(taskTitle);
+    const taskCard = page.locator('[data-testid^="task-"]').filter({ hasText: taskTitle }).first();
+    await expect(taskCard).toBeVisible();
 
     // Find column containing specific heading, ensuring we get the outer column div, not the header
-    const inProgressColumn = page.locator('div[class*="_column_"]').filter({
-      has: page.locator('h3', { hasText: "In Progress" }),
-      hasNot: page.locator('div[class*="Header"]') // The header itself shouldn't be the target if it contains "Header" in class
-    }).first();
+    const inProgressColumn = page.getByTestId("drop-column-inprogress");
 
     // Perform drag and drop using manual mouse actions for better compatibility with react-dnd
-    const cardBox = await taskCard.boundingBox();
-    const columnBox = await inProgressColumn.boundingBox();
-
-    if (cardBox && columnBox) {
-      await page.mouse.move(cardBox.x + cardBox.width / 2, cardBox.y + cardBox.height / 2);
-      await page.mouse.down();
-      // Move to the target column
-      await page.mouse.move(columnBox.x + columnBox.width / 2, columnBox.y + columnBox.height / 2, { steps: 20 });
-      await page.mouse.up();
-    }
+    await taskCard.dragTo(inProgressColumn);
 
     // Verify task is now in In Progress column area
     await expect(inProgressColumn.getByText(taskTitle)).toBeVisible({ timeout: 10000 });

@@ -198,7 +198,7 @@ export default function TaskCard({ task, socket }) {
 
     const [{ IsDragging }, dragRef] = useDrag(() => ({
         type: "TASK",
-        item: { id: task.id },
+        item: { id: task.id, isEditing: IsEditing },
         canDrag: !IsEditing,
         collect: (monitor) => ({
             IsDragging: monitor.isDragging(),

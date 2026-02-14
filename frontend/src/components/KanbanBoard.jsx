@@ -91,7 +91,7 @@ export default function KanbanBoard({ socket: externalSocket }) {
 
       <div className={styles.contentArea}>
         {ShowChart && (
-          <div className={styles.chartPanel}>
+          <div className={styles.chartPanel} style={{ minHeight: "280px" }}>
             <TaskProgressChart Tasks={Tasks} />
           </div>
         )}

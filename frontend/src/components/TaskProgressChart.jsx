@@ -40,9 +40,9 @@ export default function TaskProgressChart({ Tasks }) {
         </span>
       </div>
 
-      <div style={{ flexGrow: 1, minHeight: 0 }}>
-      <div data-testid="bar-chart">
-        <ResponsiveContainer width="100%" height="100%">
+      <div style={{ flexGrow: 1, minHeight: "260px" }}>
+  <div data-testid="bar-chart" style={{ width: "100%", height: "260px" }}>
+    <ResponsiveContainer width="100%" height="100%">
           <BarChart data={Data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ebecf0" />
             <XAxis
