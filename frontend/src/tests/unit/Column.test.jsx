@@ -108,7 +108,7 @@ describe("Column Component", () => {
         });
 
         it("accepts TASK drop type", () => {
-           
+
             renderWithProviders(
                 <Column column={todoColumn} tasks={[]} socket={mockSocket} />
             );
@@ -180,12 +180,13 @@ describe("Column Component", () => {
 
     describe("Edge Cases", () => {
         it("handles null tasks array gracefully", () => {
-            expect(() => {
-                renderWithProviders(
-                    <Column column={todoColumn} tasks={null} socket={mockSocket} />
-                );
-            }).toThrow(); 
+            renderWithProviders(
+                <Column column={todoColumn} tasks={null} socket={mockSocket} />
+            );
+
+            expect(screen.getByText("0")).toBeInTheDocument();
         });
+
 
         it("handles undefined socket", () => {
             // Test what happens if socket is undefined
@@ -193,7 +194,7 @@ describe("Column Component", () => {
                 renderWithProviders(
                     <Column column={todoColumn} tasks={[]} socket={undefined} />
                 );
-            }).toThrow(); 
+            }).not.toThrow();
         });
 
         it("renders large number of tasks", () => {

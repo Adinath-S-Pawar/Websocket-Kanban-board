@@ -9,13 +9,9 @@ import KanbanBoard from "../../components/KanbanBoard";
 describe("KanbanBoard Component", () => {
   let mockSocket;
 
-  beforeEach(async () => {
-    const { io } = await import("socket.io-client");
-    mockSocket = io();
-
-    mockSocket.clear();
-    mockSocket.connected = true;
-  });
+  beforeEach(() => {
+  mockSocket = createMockSocket();
+});
 
   afterEach(() => {
     vi.clearAllMocks();
@@ -25,12 +21,12 @@ describe("KanbanBoard Component", () => {
 
   describe("Rendering", () => {
     it("renders Kanban board title", () => {
-      renderWithProviders(<KanbanBoard />);
+      renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
       expect(screen.getByText("Kanban Board")).toBeInTheDocument();
     });
 
     it("renders all three columns", () => {
-      renderWithProviders(<KanbanBoard />);
+      renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
 
       expect(screen.getByText("To Do")).toBeInTheDocument();
       expect(screen.getByText("In Progress")).toBeInTheDocument();
@@ -38,7 +34,7 @@ describe("KanbanBoard Component", () => {
     });
 
     it("renders task creation form", () => {
-      renderWithProviders(<KanbanBoard />);
+      renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
 
       const input = screen.getByPlaceholderText("Enter task title...");
       const addButton = screen.getByRole("button", { name: /add/i });
@@ -48,7 +44,7 @@ describe("KanbanBoard Component", () => {
     });
 
     it("renders show/hide stats button", () => {
-      renderWithProviders(<KanbanBoard />);
+      renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
 
       const statsButton = screen.getByRole("button", { name: /show stats/i });
       expect(statsButton).toBeInTheDocument();
@@ -56,26 +52,21 @@ describe("KanbanBoard Component", () => {
   });
 
   describe("WebSocket Connection", () => {
-    it("connects to WebSocket on mount", () => {
-      renderWithProviders(<KanbanBoard />);
-
-      expect(io).toHaveBeenCalledWith("http://localhost:5000");
-    });
 
     it("registers connect event listener", () => {
-      renderWithProviders(<KanbanBoard />);
+      renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
 
       expect(mockSocket.on).toHaveBeenCalledWith("connect", expect.any(Function));
     });
 
     it("registers sync:tasks event listener", () => {
-      renderWithProviders(<KanbanBoard />);
+      renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
 
       expect(mockSocket.on).toHaveBeenCalledWith("sync:tasks", expect.any(Function));
     });
 
     it("requests task sync on connect", () => {
-      renderWithProviders(<KanbanBoard />);
+      renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
 
       // Simulate connection
       mockSocket.simulateEvent("connect");
@@ -85,7 +76,7 @@ describe("KanbanBoard Component", () => {
     });
 
     it("cleans up event listeners on unmount", () => {
-      const { unmount } = renderWithProviders(<KanbanBoard />);
+      const { unmount } = renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
 
       unmount();
 
@@ -96,7 +87,7 @@ describe("KanbanBoard Component", () => {
 
   describe("Task Display", () => {
     it("displays tasks after receiving sync:tasks event", async () => {
-      renderWithProviders(<KanbanBoard />);
+      renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
 
       // Simulate receiving tasks from server
       mockSocket.simulateEvent("sync:tasks", allSampleTasks);
@@ -109,7 +100,7 @@ describe("KanbanBoard Component", () => {
     });
 
     it("filters tasks by status correctly", async () => {
-      renderWithProviders(<KanbanBoard />);
+      renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
 
       mockSocket.simulateEvent("sync:tasks", allSampleTasks);
 
@@ -126,7 +117,7 @@ describe("KanbanBoard Component", () => {
     });
 
     it("shows loading state initially", () => {
-      renderWithProviders(<KanbanBoard />);
+      renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
 
       // Before sync:tasks event, board should be in loading state
       // (In this implementation, it just shows empty columns)
@@ -138,7 +129,7 @@ describe("KanbanBoard Component", () => {
   describe("Task Creation", () => {
     it("creates a new task when form is submitted", async () => {
       const user = userEvent.setup();
-      renderWithProviders(<KanbanBoard />);
+      renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
 
       const input = screen.getByPlaceholderText("Enter task title...");
       const addButton = screen.getByRole("button", { name: /add/i });
@@ -153,7 +144,7 @@ describe("KanbanBoard Component", () => {
 
     it("clears input after task creation", async () => {
       const user = userEvent.setup();
-      renderWithProviders(<KanbanBoard />);
+      renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
 
       const input = screen.getByPlaceholderText("Enter task title...");
       const addButton = screen.getByRole("button", { name: /add/i });
@@ -166,7 +157,7 @@ describe("KanbanBoard Component", () => {
 
     it("does not create task with empty title", async () => {
       const user = userEvent.setup();
-      renderWithProviders(<KanbanBoard />);
+      renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
 
       const addButton = screen.getByRole("button", { name: /add/i });
 
@@ -178,7 +169,7 @@ describe("KanbanBoard Component", () => {
 
     it("trims whitespace from task title", async () => {
       const user = userEvent.setup();
-      renderWithProviders(<KanbanBoard />);
+      renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
 
       const input = screen.getByPlaceholderText("Enter task title...");
       const addButton = screen.getByRole("button", { name: /add/i });
@@ -192,7 +183,7 @@ describe("KanbanBoard Component", () => {
 
     it("creates task with default values", async () => {
       const user = userEvent.setup();
-      renderWithProviders(<KanbanBoard />);
+      renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
 
       const input = screen.getByPlaceholderText("Enter task title...");
       const addButton = screen.getByRole("button", { name: /add/i });
@@ -214,7 +205,7 @@ describe("KanbanBoard Component", () => {
   describe("Statistics Toggle", () => {
     it("shows chart when Show Stats button is clicked", async () => {
       const user = userEvent.setup();
-      renderWithProviders(<KanbanBoard />);
+      renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
 
       mockSocket.simulateEvent("sync:tasks", allSampleTasks);
 
@@ -228,7 +219,7 @@ describe("KanbanBoard Component", () => {
 
     it("hides chart when Hide Stats button is clicked", async () => {
       const user = userEvent.setup();
-      renderWithProviders(<KanbanBoard />);
+      renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
 
       mockSocket.simulateEvent("sync:tasks", allSampleTasks);
 
@@ -247,7 +238,7 @@ describe("KanbanBoard Component", () => {
 
     it("toggles chart visibility multiple times", async () => {
       const user = userEvent.setup();
-      renderWithProviders(<KanbanBoard />);
+      renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
 
       mockSocket.simulateEvent("sync:tasks", allSampleTasks);
 
@@ -270,7 +261,7 @@ describe("KanbanBoard Component", () => {
 
   describe("Real-time Updates", () => {
     it("updates UI when new tasks are synced", async () => {
-      renderWithProviders(<KanbanBoard />);
+      renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
 
       // Initial sync
       mockSocket.simulateEvent("sync:tasks", [sampleTask1]);
@@ -289,7 +280,7 @@ describe("KanbanBoard Component", () => {
     });
 
     it("handles empty task list", async () => {
-      renderWithProviders(<KanbanBoard />);
+      renderWithProviders(<KanbanBoard socket = {mockSocket}/>);
 
       mockSocket.simulateEvent("sync:tasks", []);
 

@@ -4,17 +4,17 @@ import Column from "./Column";
 import styles from "./KanbanBoard.module.css";
 import TaskProgressChart from "./TaskProgressChart";
 
-export default function KanbanBoard({ socket: externalSocket }) {
-  const socket = externalSocket || io("http://localhost:5000");
-}
-
 const COLUMNS = [
   { key: "todo", title: "To Do" },
   { key: "inprogress", title: "In Progress" },
   { key: "done", title: "Done" },
 ];
 
-export default function KanbanBoard() {
+export default function KanbanBoard({ socket: externalSocket }) {
+  const socket = useMemo(() => {
+    return externalSocket || io("http://localhost:5000");
+  }, [externalSocket]); 
+ 
   const [Tasks, setTasks] = useState([]);
   const [IsLoading, setIsLoading] = useState(true);
 
@@ -36,7 +36,7 @@ export default function KanbanBoard() {
       socket.off("connect");
       socket.off("sync:tasks");
     };
-  }, []);
+  }, [socket]);
 
   const TasksByStatus = useMemo(() => {
     return {
