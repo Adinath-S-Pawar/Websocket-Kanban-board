@@ -7,7 +7,7 @@ const app = express();
 const server = http.createServer(app);
 const AllowedOrigins = [
   "http://localhost:5173",
-  "https://realtime-kanban-websocket.vercel.app/",
+  "https://realtime-kanban-websocket.vercel.app",
 ];
 
 const io = new Server(server, {
