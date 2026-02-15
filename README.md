@@ -121,10 +121,10 @@ Websocket-Kanban-board/
 ## 🚀 Local Setup
 
 ### 1) Clone the repo
-\`\`\`bash
+```bash
 git clone https://github.com/Adinath-S-Pawar/Websocket-Kanban-board.git
 cd Websocket-Kanban-board
-\`\`\`
+```
 
 ---
 
