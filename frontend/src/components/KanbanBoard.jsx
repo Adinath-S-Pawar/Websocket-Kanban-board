@@ -3,6 +3,7 @@ import { io } from "socket.io-client";
 import Column from "./Column";
 import styles from "./KanbanBoard.module.css";
 import TaskProgressChart from "./TaskProgressChart";
+import { socket as defaultSocket } from "../socket";
 
 const COLUMNS = [
   { key: "todo", title: "To Do" },
@@ -12,7 +13,7 @@ const COLUMNS = [
 
 export default function KanbanBoard({ socket: externalSocket }) {
   const socket = useMemo(() => {
-    return externalSocket || io("http://localhost:5000");
+    return externalSocket || defaultSocket;
   }, [externalSocket]); 
  
   const [Tasks, setTasks] = useState([]);
