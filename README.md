@@ -1,6 +1,5 @@
 
 ---
-```bash
 
 # Real-time Kanban Board (WebSockets + React + Node)
 
