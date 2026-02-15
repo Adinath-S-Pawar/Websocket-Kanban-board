@@ -1,4 +1,3 @@
-
 ---
 
 # Real-time Kanban Board (WebSockets + React + Node)
@@ -117,6 +116,7 @@ Websocket-Kanban-board/
 │   └── vite.config.js
 │
 └── README.md
+```
 ---
 ## 🚀 Local Setup
 
