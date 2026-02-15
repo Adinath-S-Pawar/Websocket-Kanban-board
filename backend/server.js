@@ -5,7 +5,18 @@ const crypto = require("crypto");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const AllowedOrigins = [
+  "http://localhost:5173",
+  "https://realtime-kanban-websocket.vercel.app/",
+];
+
+const io = new Server(server, {
+  cors: {
+    origin: AllowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
 
 let tasks = [];
 
