@@ -131,63 +131,63 @@ cd Websocket-Kanban-board
 ### 2) Install dependencies
 
 #### Backend
-\`\`\`bash
+```bash
 cd backend
 npm install
-\`\`\`
+```
 
 #### Frontend
-\`\`\`bash
+```bash
 cd ../frontend
 npm install
-\`\`\`
+```
 
 ---
 
 ### 3) Run the application
 
 #### Start backend
-\`\`\`bash
+```bash
 cd backend
 node server.js
-\`\`\`
+```
 
 Backend runs on:
-\`\`\`
+```
 http://localhost:5000
-\`\`\`
+```
 
 #### Start frontend
-\`\`\`bash
+```bash
 cd frontend
 npm run dev
-\`\`\`
+```
 
 Frontend runs on:
-\`\`\`
+```
 http://localhost:5173
-\`\`\`
+```
 
 ---
 
 ## 🧪 Testing
 
 ### Unit + Integration Tests
-\`\`\`bash
+```bash
 cd frontend
 npx vitest
-\`\`\`
+```
 
 ### End-to-End (E2E) Tests
-\`\`\`bash
+```bash
 cd frontend
 npx playwright test
-\`\`\`
+```
 
 To view the E2E test report:
-\`\`\`bash
+```bash
 npx playwright show-report
-\`\`\`
+```
 
 ---
 
