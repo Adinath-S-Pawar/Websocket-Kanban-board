@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-export const socket = io("https://websocket-kanban-board-5z77.onrender.com", {
+export const socket = io(import.meta.env.VITE_BACKEND_URL, {
   transports: ["websocket"],
   autoConnect: true,
 });
